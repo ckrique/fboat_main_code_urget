@@ -8,7 +8,6 @@ DualVNH5019MotorShield md;
 // SoftwareSerial ss(5, 3);
 
 /*****************************
-
 - recebe sinal pwm da pixhawk
 - mapeia para ângulo de atuadores
 - lê potenciometros
@@ -17,7 +16,6 @@ DualVNH5019MotorShield md;
 - aplica os ganhos nesse erro
 - manda esse sinal para o driver do motor
 - envia estado para a pixhawk comunicação serial
-
 *****************************/
 
 // ATUADOR LINEAR

@@ -1,4 +1,4 @@
-//#include "DualVNH5019MotorShield.h" //drive motor
+#include "DualVNH5019MotorShield.h" //drive motor
 #include "Wire.h"
 #include "mavlink.h"
 #include <SoftwareSerial.h>
@@ -27,7 +27,17 @@
 //velocidade positiva (+400) -> vela FECHA
 //velocidade negativa (-400) -> vela ABRE
 
-
+//Pin map
+#define  _INA1  2
+#define  _INB1  4
+#define  _PWM1  9
+#define  _EN1DIAG1  6
+#define  _CS1  A0
+#define  _INA2  7
+#define  _INB2  8
+#define  _PWM2  10
+#define  _EN2DIAG2  12
+#define  _CS2  A1
 
 
 // variáveis PID
@@ -100,21 +110,14 @@ int angulo_leme, angulo_vela;
 int vel_acc;
 int vel_incremento = 20;
 
-//Pin map
-  _INA1 = 2;
-  _INB1 = 4;
-  _PWM1 = 9;
-  _EN1DIAG1 = 6;
-  _CS1 = A0;
-  _INA2 = 7;
-  _INB2 = 8;
-  _PWM2 = 10;
-  _EN2DIAG2 = 12;
-  _CS2 = A1;
 
 
-void init()
+
+/*void init()
 {
+  static const unsigned char _PWM1_TIMER1_PIN = 9;
+  static const unsigned char _PWM2_TIMER1_PIN = 10;
+  
   // Define pinMode for the pins and set the frequency for timer1.
 
   pinMode(_INA1, OUTPUT);
@@ -147,16 +150,53 @@ void init()
 
   // #endif
 }
-
+*/
 void setup() {
-  init();
+  
+  static const unsigned char _PWM1_TIMER1_PIN = 9;
+  static const unsigned char _PWM2_TIMER1_PIN = 10;
+  
+  // Define pinMode for the pins and set the frequency for timer1.
+
+  pinMode(_INA1, OUTPUT);
+  pinMode(_INB1, OUTPUT);
+  pinMode(_PWM1, OUTPUT);
+  pinMode(_EN1DIAG1, INPUT);
+  pinMode(_CS1, INPUT);
+  pinMode(_INA2, OUTPUT);
+  pinMode(_INB2, OUTPUT);
+  pinMode(_PWM2, OUTPUT);
+  pinMode(_EN2DIAG2, INPUT);
+  pinMode(_CS2, INPUT);
+
+  //#ifdef DUALVNH5019MOTORSHIELD_TIMER1_AVAILABLE
+
+  if (_PWM1 == _PWM1_TIMER1_PIN && _PWM2 == _PWM2_TIMER1_PIN)
+  {
+    // Timer 1 configuration
+    // prescaler: clockI/O / 1
+    // outputs enabled
+    // phase-correct PWM
+    // top of 400
+    //
+    // PWM frequency calculation
+    // 16MHz / 1 (prescaler) / 2 (phase-correct) / 400 (top) = 20kHz
+    TCCR1A = 0b10100000;
+    TCCR1B = 0b00010001;
+    ICR1 = 400;
+  }
+  
+  
+  //init();
   //md.init();
+
+  
   //ss.begin(115200);
   _starttime_r = millis();
   _starttime_s = millis();
   _starttime_m = millis();
   Serial.begin(9600);
-  Serial3.begin(115200);
+  //Serial3.begin(115200); --> COMENTADO PARA O ARDUINO NANO
   pinMode(28, INPUT); //leme
   pinMode(26, INPUT); //vela
 }

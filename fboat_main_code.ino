@@ -10,8 +10,8 @@ DualVNH5019MotorShield md;
 /*****************************
 - recebe sinal pwm da pixhawk
 - mapeia para ângulo de atuadores
-- lê potenciometros
-- mapeia o valor do potenciometro para ângulo do leme (saber a posição atual)
+- lê potenciômetros
+- mapeia o valor do potenciômetros para ângulo do leme (saber a posição atual)
 - compara o leme desejado ao atual e encontra um erro
 - aplica os ganhos nesse erro
 - manda esse sinal para o driver do motor

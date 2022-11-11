@@ -1,9 +1,9 @@
-#include "DualVNH5019MotorShield.h" //drive motor
+//#include "DualVNH5019MotorShield.h" //drive motor
 #include "Wire.h"
 #include "mavlink.h"
 #include <SoftwareSerial.h>
 
-DualVNH5019MotorShield md;
+//DualVNH5019MotorShield md;
 //SoftwareSerial ss(5, 3);
 
 /*****************************
@@ -26,6 +26,9 @@ DualVNH5019MotorShield md;
 //GUINCHO
 //velocidade positiva (+400) -> vela FECHA
 //velocidade negativa (-400) -> vela ABRE
+
+
+
 
 // variáveis PID
 float Kp_r = 10;
@@ -97,7 +100,20 @@ int angulo_leme, angulo_vela;
 int vel_acc;
 int vel_incremento = 20;
 
+//Pin map
+  _INA1 = 2;
+  _INB1 = 4;
+  _PWM1 = 9;
+  _EN1DIAG1 = 6;
+  _CS1 = A0;
+  _INA2 = 7;
+  _INB2 = 8;
+  _PWM2 = 10;
+  _EN2DIAG2 = 12;
+  _CS2 = A1;
+
 void setup() {
+
   md.init();
   //ss.begin(115200);
   _starttime_r = millis();
@@ -139,7 +155,9 @@ void leme_controle(int theta_r_desejado){
 
   // envia comando para o motor
   //set_speed_suave(velocidade_motor, _motor_leme_ant, motor_leme);
-  md.setM1Speed(velocidade_motor); //-400 <-> +400
+  //md.setM1Speed(velocidade_motor); //-400 <-> +400
+  setM1Speed(velocidade_motor); //-400 <-> +400
+
 
   // mede a corrente
   float corrente_motor = get_corrente(motor_leme);
@@ -152,6 +170,54 @@ void leme_controle(int theta_r_desejado){
 
   //delay(10);
 }
+
+
+// Set speed for motor 1, speed is a number betwenn -400 and 400
+void setM1Speed(int speed)
+{
+  static const unsigned char _PWM1_TIMER1_PIN = 9;
+  static const unsigned char _PWM2_TIMER1_PIN = 10;
+  
+  unsigned char reverse = 0;
+
+  if (speed < 0)
+  {
+    speed = -speed;  // Make speed a positive quantity
+    reverse = 1;  // Preserve the direction
+  }
+  if (speed > 400)  // Max PWM dutycycle
+    speed = 400;
+
+  //#ifdef DUALVNH5019MOTORSHIELD_TIMER1_AVAILABLE
+    if (_PWM1 == _PWM1_TIMER1_PIN && _PWM2 == _PWM2_TIMER1_PIN)
+    {
+      OCR1A = speed;
+    }
+    else
+    {
+      analogWrite(_PWM1,speed * 51 / 80); // map 400 to 255
+    }
+ // #else
+   // analogWrite(_PWM1,speed * 51 / 80); // map 400 to 255
+  //#endif
+
+  if (speed == 0)
+  {
+    digitalWrite(_INA1,LOW);   // Make the motor coast no
+    digitalWrite(_INB1,LOW);   // matter which direction it is spinning.
+  }
+  else if (reverse)
+  {
+    digitalWrite(_INA1,LOW);
+    digitalWrite(_INB1,HIGH);
+  }
+  else
+  {
+    digitalWrite(_INA1,HIGH);
+    digitalWrite(_INB1,LOW);
+  }
+}
+
 
 void vela_controle(int theta_s_desejado){  
   // verifica posição atual da vela

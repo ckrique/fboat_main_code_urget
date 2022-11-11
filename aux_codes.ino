@@ -71,11 +71,24 @@ void com_pixhawk_leme(float corrente_motor, int theta_r_atual, int velocidade_mo
   }
 }
 
+unsigned int getM1CurrentMilliamps(); // Get current reading for M1.
+{
+    // 5V / 1024 ADC counts / 144 mV per A = 34 mA per count
+  return analogRead(_CS2) * 34;
+}
+
+unsigned int getM2CurrentMilliamps() // Get current reading for M2.
+{
+    // 5V / 1024 ADC counts / 144 mV per A = 34 mA per count
+  return analogRead(_CS1) * 34;
+}
+
 float get_corrente(int motor){
   if (motor == 1){
-    return md.getM1CurrentMilliamps()/1000.;
+    return getM1CurrentMilliamps()/1000.;
   }
   if (motor == 2){
-    return md.getM2CurrentMilliamps()/1000.;
+    return getM2CurrentMilliamps()/1000.;
   }
 }
+

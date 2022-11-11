@@ -4,10 +4,11 @@
 #include <SoftwareSerial.h>
 
 DualVNH5019MotorShield md;
-//SoftwareSerial ss(5, 3);
+
+// SoftwareSerial ss(5, 3);
 
 /*****************************
- 
+
 - recebe sinal pwm da pixhawk
 - mapeia para ângulo de atuadores
 - lê potenciometros
@@ -19,13 +20,13 @@ DualVNH5019MotorShield md;
 
 *****************************/
 
-//ATUADOR LINEAR
-//velocidade positiva -> indo para -90
-//velocidade negativa -> indo para 90
+// ATUADOR LINEAR
+// velocidade positiva -> indo para -90
+// velocidade negativa -> indo para 90
 
-//GUINCHO
-//velocidade positiva (+400) -> vela FECHA
-//velocidade negativa (-400) -> vela ABRE
+// GUINCHO
+// velocidade positiva (+400) -> vela FECHA
+// velocidade negativa (-400) -> vela ABRE
 
 // variáveis PID
 float Kp_r = 10;
@@ -45,7 +46,7 @@ float I_max_m = 200;
 
 float _endtime_r, _starttime_r, _endtime_s, _starttime_s, _endtime_m, _starttime_m;
 
-// pinos dos potenciometros do leme e da vela
+// pinos dos potenciômetros do leme e da vela
 int pinoPot_r = A2;
 int pinoPot_s = A3;
 
@@ -55,7 +56,7 @@ int range = 40;
 int pot_min_r = 150; // leme -90 graus (faz o veleiro virar no sentido horário)
 int pot_max_r = 670; // leme 90 graus (faz o veleiro virar no sentido anti-horário)
 
-//valor do pot quando a vela está no max e no min
+// valor do pot quando a vela está no max e no min
 int pot_min_s = 750; // leme -90 graus (faz o veleiro virar no sentido horário)
 int pot_max_s = 350; // leme 90 graus (faz o veleiro virar no sentido anti-horário)
 
@@ -97,37 +98,82 @@ int angulo_leme, angulo_vela;
 int vel_acc;
 int vel_incremento = 20;
 
-void setup() {
-  md.init();
-  //ss.begin(115200);
+void setup()
+{
+  // md.init();
+
+  init();
+
+  // inicialização dos potenciômetros
   _starttime_r = millis();
   _starttime_s = millis();
   _starttime_m = millis();
+
+  // inicialização do serial mavlink
   Serial.begin(9600);
   Serial3.begin(115200);
-  pinMode(28, INPUT); //leme
-  pinMode(26, INPUT); //vela
+
+  // inicialização dos pinos
+  pinMode(28, INPUT); // leme
+  pinMode(26, INPUT); // vela
 }
 
-void loop() {
+void init()
+{
+  // Define pinMode for the pins and set the frequency for timer1.
+
+  pinMode(_INA1, OUTPUT);
+  pinMode(_INB1, OUTPUT);
+  pinMode(_PWM1, OUTPUT);
+  pinMode(_EN1DIAG1, INPUT);
+  pinMode(_CS1, INPUT);
+  pinMode(_INA2, OUTPUT);
+  pinMode(_INB2, OUTPUT);
+  pinMode(_PWM2, OUTPUT);
+  pinMode(_EN2DIAG2, INPUT);
+  pinMode(_CS2, INPUT);
+
+  //#ifdef DUALVNH5019MOTORSHIELD_TIMER1_AVAILABLE
+
+  if (_PWM1 == _PWM1_TIMER1_PIN && _PWM2 == _PWM2_TIMER1_PIN)
+  {
+    // Timer 1 configuration
+    // prescaler: clockI/O / 1
+    // outputs enabled
+    // phase-correct PWM
+    // top of 400
+    //
+    // PWM frequency calculation
+    // 16MHz / 1 (prescaler) / 2 (phase-correct) / 400 (top) = 20kHz
+    TCCR1A = 0b10100000;
+    TCCR1B = 0b00010001;
+    ICR1 = 400;
+  }
+
+  // #endif
+}
+
+void loop()
+{
   // garantir que o código não vai ficar preso no read_radio()
   read_radio();
-  leme_controle(constrain(angulo_leme, -90, 90));  
+  leme_controle(constrain(angulo_leme, -90, 90));
   vela_controle(constrain(angulo_vela, 0, 90));
   // conta o número de comandos enviados. isso é usado para limitar o envio de mensagens para a pixhawk
   cont_leme++;
   cont_vela++;
-  //delay(100);
+  // delay(100);
 }
 
-void leme_controle(int theta_r_desejado){  
+void leme_controle(int theta_r_desejado)
+{
   // verifica posição atual do leme
   int theta_r_atual = ler_angulo_atual_r();
 
   // calcula o erro com o angulo desejado
   int erro = theta_r_desejado - theta_r_atual;
-  //erro = -erro
-  
+  // erro = -erro
+
   // calcula os valores PID
   int velocidade_motor = P_r(erro) + I_r(erro);
 
@@ -138,7 +184,7 @@ void leme_controle(int theta_r_desejado){
   velocidade_motor = satura_motor(velocidade_motor, vel_limite_leme);
 
   // envia comando para o motor
-  //set_speed_suave(velocidade_motor, _motor_leme_ant, motor_leme);
+  // set_speed_suave(velocidade_motor, _motor_leme_ant, motor_leme);
   md.setM1Speed(velocidade_motor); //-400 <-> +400
 
   // mede a corrente
@@ -150,10 +196,11 @@ void leme_controle(int theta_r_desejado){
   // debuga
   debug_leme(theta_r_atual, angulo_leme, velocidade_motor, corrente_motor);
 
-  //delay(10);
+  // delay(10);
 }
 
-void vela_controle(int theta_s_desejado){  
+void vela_controle(int theta_s_desejado)
+{
   // verifica posição atual da vela
   int theta_s_atual = ler_angulo_atual_s();
 
@@ -165,7 +212,8 @@ void vela_controle(int theta_s_desejado){
 
   // encontra valores do controlador
   int velocidade_motor = P_s(erro) + I_s(erro);
-  //int velocidade_motor = P_s(erro);
+
+  // int velocidade_motor = P_s(erro);
 
   // satura pwm para max e min
   velocidade_motor = constrain(velocidade_motor, -400, 400);
@@ -176,16 +224,16 @@ void vela_controle(int theta_s_desejado){
   // set_speed_suave(velocidade_motor, _motor_vela_ant, motor_vela);
   // md.setM2Speed(velocidade_motor); //-400 <-> +400
   set_speed_incremental(velocidade_motor);
-  
-  //set_speed_suave(velocidade_motor); //-400 <-> +400
+
+  // set_speed_suave(velocidade_motor); //-400 <-> +400
 
   _motor_vela_ant = velocidade_motor;
-   
+
   float corrente_motor = get_corrente(motor_vela);
 
   com_pixhawk_vela(corrente_motor, theta_s_atual, velocidade_motor);
 
   debug_vela(theta_s_atual, angulo_vela, velocidade_motor, corrente_motor);
-  
-  //delay(10);
+
+  // delay(10);
 }
